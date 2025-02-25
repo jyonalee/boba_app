@@ -1,5 +1,6 @@
 import { ScrollView, View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/contexts/AuthContext';
 
 const MOCK_COMMENTS = [
   {
@@ -19,6 +20,16 @@ const MOCK_COMMENTS = [
 ];
 
 export default function ProfileScreen() {
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
@@ -36,6 +47,12 @@ export default function ProfileScreen() {
             <Text style={styles.name}>Sarah Chen</Text>
             <Text style={styles.bio}>Boba enthusiast | 🧋</Text>
           </View>
+          <Pressable 
+            style={styles.signOutButton} 
+            onPress={handleSignOut}
+          >
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </Pressable>
         </View>
 
         <View style={styles.statsContainer}>
@@ -210,5 +227,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#666',
+  },
+  signOutButton: {
+    backgroundColor: '#FF4785',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+    width: '80%',
+    alignSelf: 'center',
+  },
+  signOutText: {
+    color: 'white',
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
