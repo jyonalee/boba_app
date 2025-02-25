@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,20 +6,44 @@ import {
   ScrollView,
   Switch,
   Pressable,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { usePreferences, UserPreferences } from '@/contexts/PreferencesContext';
 
 const SWEETNESS_LEVELS = ['Extra Sweet', 'Regular', 'Less Sweet', 'Half Sweet', 'Little Sweet'];
 const TOPPINGS = ['Boba', 'Pudding', 'Aloe Vera', 'Red Bean', 'Grass Jelly', 'Lychee Jelly'];
 const TEA_BASES = ['Black Tea', 'Green Tea', 'Oolong Tea', 'Thai Tea', 'Taro'];
 
 export default function PreferencesScreen() {
+  const { preferences, isLoading, savePreferences, error } = usePreferences();
+  
+  // Local state for form values
   const [sweetnessPreference, setSweetnessPreference] = useState('Regular');
-  const [selectedToppings, setSelectedToppings] = useState(['Boba']);
-  const [selectedBases, setSelectedBases] = useState(['Black Tea']);
+  const [selectedToppings, setSelectedToppings] = useState<string[]>(['Boba']);
+  const [selectedBases, setSelectedBases] = useState<string[]>(['Black Tea']);
   const [lactoseFree, setLactoseFree] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const toggleTopping = (topping) => {
+  // Load preferences from context
+  useEffect(() => {
+    if (preferences) {
+      setSweetnessPreference(preferences.sweetness_level);
+      setSelectedToppings(preferences.toppings);
+      setSelectedBases(preferences.tea_bases);
+      setLactoseFree(preferences.lactose_free);
+    }
+  }, [preferences]);
+
+  // Show error if any
+  useEffect(() => {
+    if (error) {
+      Alert.alert('Error', error);
+    }
+  }, [error]);
+
+  const toggleTopping = (topping: string) => {
     if (selectedToppings.includes(topping)) {
       setSelectedToppings(selectedToppings.filter((t) => t !== topping));
     } else {
@@ -27,13 +51,41 @@ export default function PreferencesScreen() {
     }
   };
 
-  const toggleBase = (base) => {
+  const toggleBase = (base: string) => {
     if (selectedBases.includes(base)) {
       setSelectedBases(selectedBases.filter((b) => b !== base));
     } else {
       setSelectedBases([...selectedBases, base]);
     }
   };
+
+  const handleSavePreferences = async () => {
+    setIsSaving(true);
+    try {
+      const newPreferences: UserPreferences = {
+        sweetness_level: sweetnessPreference,
+        toppings: selectedToppings,
+        tea_bases: selectedBases,
+        lactose_free: lactoseFree,
+      };
+      
+      await savePreferences(newPreferences);
+      Alert.alert('Success', 'Your preferences have been saved!');
+    } catch (err) {
+      console.error('Error saving preferences:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF4785" />
+        <Text style={styles.loadingText}>Loading your preferences...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -128,6 +180,20 @@ export default function PreferencesScreen() {
             />
           </View>
         </View>
+
+        <View style={styles.buttonContainer}>
+          <Pressable 
+            style={styles.saveButton}
+            onPress={handleSavePreferences}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <Text style={styles.saveButtonText}>Save Preferences</Text>
+            )}
+          </Pressable>
+        </View>
       </ScrollView>
     </View>
   );
@@ -137,6 +203,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFF',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
   },
   scrollView: {
     flex: 1,
@@ -208,5 +285,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 2,
+  },
+  buttonContainer: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  saveButton: {
+    backgroundColor: '#FF4785',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

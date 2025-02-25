@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { PreferencesProvider } from '@/contexts/PreferencesContext';
 
 declare global {
   interface Window {
@@ -48,8 +49,10 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <RootLayoutNav />
-      <StatusBar style="auto" />
+      <PreferencesProvider>
+        <RootLayoutNav />
+        <StatusBar style="auto" />
+      </PreferencesProvider>
     </AuthProvider>
   );
 }
